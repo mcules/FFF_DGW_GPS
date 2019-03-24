@@ -18,7 +18,7 @@ DecMin_conv() {
 	# cut: get coordinates string from line
 	# sed1: delete dot
 	# sed2: grep first seven numbers
-	minutes=$(echo $dataset | cut -d',' -f$coord | sed -e 's/\.//g' -e 's/.*\(.\{7\}\)$/\1/')
+	minutes=$(echo $dataset | cut -d',' -f$coord | sed -e 's/\.//g' -e 's/.*\(.\{6\}\)$/\1/')
 	# make integer and convert minutes
 	minutes_calc=$((`expr $(echo $minutes) + 0` * 1000 / 600))
 	# get degrees from $dataset
@@ -26,7 +26,7 @@ DecMin_conv() {
 	# sed1: delete dot
 	# sed2: delete last seven numbers
 	# sed3: delete leading zero
-	degree=$(echo $dataset | cut -d',' -f$coord | sed -e 's/\.//g' -e 's/.\{7\}$//' -e 's/^0*//')
+	degree=$(echo $dataset | cut -d',' -f$coord | sed -e 's/\.//g' -e 's/.\{6\}$//' -e 's/^0*//')
 	# get direction from $dataset
 	# cut: get direction letter from $dataset
 	# sed1: replace W with negative sign
