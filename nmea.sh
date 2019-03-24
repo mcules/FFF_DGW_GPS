@@ -1,13 +1,9 @@
 lat_old=0
 lon_old=0
 
-nmea_parse() {
-    local dataset=$1
-    update=0
-    case "$dataset" in
-        \$GPGGA*)
-
-        lon_minutes=$(echo $dataset | cut -d',' -f5 | sed 's/\.//g' | sed 's/.*\(.\{6\}\)$/\1/')
+DezMin_parse() {
+	local dataset=$1
+	lon_minutes=$(echo $dataset | cut -d',' -f5 | sed 's/\.//g' | sed 's/.*\(.\{6\}\)$/\1/')
         lat_minutes=$(echo $dataset | cut -d',' -f3 | sed 's/\.//g' | sed 's/.*\(.\{6\}\)$/\1/')
         lon_minutes_calc=$((`expr $(echo $lon_minutes) + 0` * 1000 / 60 / 10))
         lat_minutes_calc=$((`expr $(echo $lat_minutes) + 0` * 1000 / 60 / 10))
@@ -29,8 +25,18 @@ nmea_parse() {
             lon_old="$lon"
             echo "Updated Coordinates: $lat $lon"
         fi
-    ;;
-    esac
+}
+
+nmea_parse() {
+	local dataset=$1
+	update=0
+	case "$dataset" in
+	        \$GPGGA*)
+		DezMin_parse "$dataset"
+	;;
+		\$GNGGA*)
+		DezMin_parse "$dataset"
+	esac
 }
 
 nc 10.10.31.57 7000 | while read LINE; do nmea_parse "$LINE"; done
