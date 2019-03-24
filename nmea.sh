@@ -1,55 +1,70 @@
+#####
+# Freifunk GPS Coordinates Updater
+# Usage:
+# ./nmea.sh USB PATH_TO_DEVICE
+# ./nmea.sh NET IP_ADDRESS PORT
+#####
+
 lat_old=0
 lon_old=0
 
+DezMin_Calc() {
+	local dataset=$1
+	local coord=$2
+	local direction=$3
+
+	minutes=$(echo $dataset | cut -d',' -f$coord | sed -e 's/\.//g' -e 's/.*\(.\{7\}\)$/\1/')
+	minutes_calc=$((`expr $(echo $minutes) + 0` * 1000 / 600))
+	degree=$(echo $dataset | cut -d',' -f$coord | sed -e 's/\.//g' -e 's/.\{7\}$//' -e 's/^0*//')
+	dir=$(echo $dataset | cut -d',' -f$direction | sed -e 's/W/-/g' -e 's/E//g' -e 's/S/-/g' -e 's/N//g')
+
+	echo "$dir$degree."$(echo $minutes_calc | sed -e 's/.*\(.\{6\}\)$/\1/')
+}
+
 DezMin_parse() {
 	local dataset=$1
-	lon_minutes=$(echo $dataset | cut -d',' -f5 | sed 's/\.//g' | sed 's/.*\(.\{6\}\)$/\1/')
-        lat_minutes=$(echo $dataset | cut -d',' -f3 | sed 's/\.//g' | sed 's/.*\(.\{6\}\)$/\1/')
-        lon_minutes_calc=$((`expr $(echo $lon_minutes) + 0` * 1000 / 60 / 10))
-        lat_minutes_calc=$((`expr $(echo $lat_minutes) + 0` * 1000 / 60 / 10))
-        lon_degree=$(echo $dataset | cut -d',' -f5 | sed 's/\.//g' | sed -e 's/.\{6\}$//')
-        lat_degree=$(echo $dataset | cut -d',' -f3 | sed 's/\.//g' | sed -e 's/.\{6\}$//')
-        lon_dir=$(echo $dataset | cut -d',' -f6 | sed 's/W/-/g' | sed 's/E//g')
-        lat_dir=$(echo $dataset | cut -d',' -f4 | sed 's/S/-/g' | sed 's/N//g')
 
-        lon=$(echo "$lon_dir""$lon_degree"."$lon_minutes_calc")
-        lat=$(echo "$lat_dir""$lat_degree"."$lat_minutes_calc")
+	update_FFM $(DezMin_Calc "$dataset" "3" "4") $(DezMin_Calc "$dataset" "5" "6")
+}
 
-        echo "Coordinates: $lat $lon"
+update_FFM() {
+	local lat=$1
+	local lon=$2
 
-        if [ "$lat" != "$lat_old" ] || [ "$lon" != "$lon_old" ]; then
-            uci -q set "fff.system.latitude=$lat"
-            uci -q set "fff.system.longitude=$lon"
-            uci -q commit
-            lat_old="$lat"
-            lon_old="$lon"
-            echo "Updated Coordinates: $lat $lon"
-        fi
+	if [ $(echo $lat | sed -e 's/.\{3\}$//') != $(echo $lat_old | sed -e 's/.\{3\}$//') ] || [ $(echo $lon | sed -e 's/.\{3\}$//') != $(echo $lon_old | sed -e 's/.\{3\}$//') ]; then
+		#uci -q set "fff.system.latitude=$lat"
+		#uci -q set "fff.system.longitude=$lon"
+		#uci -q commit
+		lat_old="$lat"
+		lon_old="$lon"
+		echo "Updated Coordinates: $lat $lon"
+	fi
 }
 
 nmea_parse() {
 	local dataset=$1
 	update=0
+
 	case "$dataset" in
-	        \$GPGGA*)
+	\$GPGGA*)
 		DezMin_parse "$dataset"
 	;;
-		\$GNGGA*)
+	\$GNGGA*)
 		DezMin_parse "$dataset"
+	;;
 	esac
 }
 
 case "$1" in
 	USB*)
-		echo "USB"
 		cat -v $2 | while read LINE; do nmea_parse "$LINE"; done
 	;;
 	NET*)
-		echo "Netzwerk"
 		nc $2 $3 | while read LINE; do nmea_parse "$LINE"; done
 	;;
 	*)
 		echo "Usage:"
-		echo "sh nmea.sh USB PATH_TO_DEVICE"
-		echo "sh nmea.sh NET IP_ADDRESS PORT"
+		echo "./nmea.sh USB PATH_TO_DEVICE"
+		echo "./nmea.sh NET IP_ADDRESS PORT"
+	;;
 esac
