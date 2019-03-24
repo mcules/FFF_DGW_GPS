@@ -32,9 +32,9 @@ update_FFM() {
 	local lon=$2
 
 	if [ $(echo $lat | sed -e 's/.\{3\}$//') != $(echo $lat_old | sed -e 's/.\{3\}$//') ] || [ $(echo $lon | sed -e 's/.\{3\}$//') != $(echo $lon_old | sed -e 's/.\{3\}$//') ]; then
-		#uci -q set "fff.system.latitude=$lat"
-		#uci -q set "fff.system.longitude=$lon"
-		#uci -q commit
+		uci -q set "fff.system.latitude=$lat"
+		uci -q set "fff.system.longitude=$lon"
+		uci -q commit
 		lat_old="$lat"
 		lon_old="$lon"
 		echo "Updated Coordinates: $lat $lon"
