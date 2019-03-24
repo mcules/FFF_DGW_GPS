@@ -39,4 +39,17 @@ nmea_parse() {
 	esac
 }
 
-nc 10.10.31.57 7000 | while read LINE; do nmea_parse "$LINE"; done
+case "$1" in
+	USB*)
+		echo "USB"
+		cat -v $2 | while read LINE; do nmea_parse "$LINE"; done
+	;;
+	NET*)
+		echo "Netzwerk"
+		nc $2 $3 | while read LINE; do nmea_parse "$LINE"; done
+	;;
+	*)
+		echo "Usage:"
+		echo "sh nmea.sh USB PATH_TO_DEVICE"
+		echo "sh nmea.sh NET IP_ADDRESS PORT"
+esac
